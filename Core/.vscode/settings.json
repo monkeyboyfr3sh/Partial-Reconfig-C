@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.txt": "cmake",
+        "uart_interface.h": "c"
+    }
+}
