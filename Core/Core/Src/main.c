@@ -194,7 +194,7 @@ int main(void)
   uint8_t len;
 
   // Entry
-  len = snprintf((char*)&tx_buff,1024," < ==================== Entry point ==================== > \r\n");
+  len = snprintf((char*)&tx_buff,1024,"\r\n < ==================== Fixed Core Entry point ==================== > \r\n");
   HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
 
   // Setup terminal
@@ -243,7 +243,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
 
-  len = snprintf((char*)&tx_buff,1024," < ==================== Exit point ==================== > \r\n");
+  len = snprintf((char*)&tx_buff,1024," < ==================== Fixed Core Exit point ==================== > \r\n");
   HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
 
   /* USER CODE END 3 */
