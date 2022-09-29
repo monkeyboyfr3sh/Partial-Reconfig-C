@@ -47,23 +47,24 @@ MEMORY
 {
   RAM    (xrw)    	: ORIGIN = 0x20000000,  LENGTH = 96K
   RAM2    (xrw)    	: ORIGIN = 0x10000000,  LENGTH = 16K
-  FLASH    (rx)    	: ORIGIN = 0x8000000,   LENGTH = 100K
-  MY_MEMORY (rx)  	: ORIGIN = 0x8019000,	LENGTH = 128k
-  PTR_TABLE (rx)  	: ORIGIN = 0x8039000,	LENGTH = 1k
+  ISR_MEM (rx)    	: ORIGIN = 0x8000000,   LENGTH = 1K
+  PTR_TABLE (rx)  	: ORIGIN = 0x8001000,	LENGTH = 1k
+  CORE_MEM (rx)    	: ORIGIN = 0x8002000,   LENGTH = 100K
+  APP_SECTION_1 (rx)  	: ORIGIN = 0x801A000,	LENGTH = 128k
 }
 
 /* Sections */
 SECTIONS
 {
-  /* The startup code into "FLASH" Rom type memory */
+  /* The startup code into "CORE_MEM" Rom type memory */
   .isr_vector :
   {
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH
+  } >ISR_MEM
 
-  /* The program code and other data into "FLASH" Rom type memory */
+  /* The program code and other data into "CORE_MEM" Rom type memory */
   .text :
   {
     . = ALIGN(4);
@@ -78,7 +79,7 @@ SECTIONS
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbols at end of code */
-  } >FLASH
+  } >CORE_MEM
   
     /* LUT for function pointers */
   .ptr_table :
@@ -99,14 +100,14 @@ SECTIONS
   .code_section_1 :
   {
     . = ALIGN(4);
-	__mysection_start__ = .;
+	__app_section_1_start__ = .;
 	/* function 1 copy location */
 	lut_func_ptr_1 = .;
 	*(.function_1*)
 	*(.section_1*)
 	some_var = .;
 	. = ALIGN(4);
-  } >MY_MEMORY
+  } >APP_SECTION_1
   
   .code_section_2 :
   {
@@ -117,26 +118,26 @@ SECTIONS
 	*(.section_2*)
 	another_var = .;
 	. = ALIGN(4);
-	__mysection_end__ = .;
-  } >MY_MEMORY
+	__app_section_1_end__ = .;
+  } >APP_SECTION_1
 
-  /* Check if MY_MEMORY usage exceeds MY_MEMORY size */
-  ASSERT( LENGTH(MY_MEMORY) >= (__mysection_end__ - __mysection_start__), "MY_MEMORY memory overflowed !")
+  /* Check if APP_SECTION_1 usage exceeds APP_SECTION_1 size */
+  ASSERT( LENGTH(APP_SECTION_1) >= (__app_section_1_end__ - __app_section_1_start__), "APP_SECTION_1 memory overflowed !")
 
-  /* Constant data into "FLASH" Rom type memory */
+  /* Constant data into "CORE_MEM" Rom type memory */
   .rodata :
   {
     . = ALIGN(4);
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
-  } >FLASH
+  } >CORE_MEM
 
   .ARM.extab   : {
     . = ALIGN(4);
     *(.ARM.extab* .gnu.linkonce.armextab.*)
     . = ALIGN(4);
-  } >FLASH
+  } >CORE_MEM
 
   .ARM : {
     . = ALIGN(4);
@@ -144,7 +145,7 @@ SECTIONS
     *(.ARM.exidx*)
     __exidx_end = .;
     . = ALIGN(4);
-  } >FLASH
+  } >CORE_MEM
 
   .preinit_array     :
   {
@@ -153,7 +154,7 @@ SECTIONS
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
     . = ALIGN(4);
-  } >FLASH
+  } >CORE_MEM
 
   .init_array :
   {
@@ -163,7 +164,7 @@ SECTIONS
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
     . = ALIGN(4);
-  } >FLASH
+  } >CORE_MEM
 
   .fini_array :
   {
@@ -173,7 +174,7 @@ SECTIONS
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
     . = ALIGN(4);
-  } >FLASH
+  } >CORE_MEM
   
   /* Used by the startup to initialize data */
   _sidata = LOADADDR(.data);
@@ -191,7 +192,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
 
-  } >RAM AT> FLASH
+  } >RAM AT> CORE_MEM
 
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);

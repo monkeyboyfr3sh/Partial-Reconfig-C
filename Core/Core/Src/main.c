@@ -24,20 +24,20 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
-#include "uart_interface.h"
-#include "partial_region.h"
+#include <stdbool.h>
+//#include "partial_region.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
-// External function call attribute definitions
-#define FUNC_1 __attribute__((__section__(".function_1")))
-#define FUNC_2 __attribute__((__section__(".function_2")))
 
-// Library attributes
-#define SECT_1 __attribute__((__section__(".section_1")))
-#define SECT_2 __attribute__((__section__(".section_2")))
+typedef enum {
+	stop_char = '\r',
+	backspace = 8
+}special_char_t;
+#define UART_BUFF_LEN	256
+#define HUART_HANDLE	(&huart2)
 
 // ############### Section 1 Code ###############
 extern char some_var[] = "some_var";
@@ -49,12 +49,54 @@ extern char another_var[] = "another_var";
 extern char lut_func_ptr_2;
 extern void (*functoin_2)(uint32_t) = 0;
 
+extern uint8_t tx_buff[UART_BUFF_LEN];
+extern uint8_t rx_buff[UART_BUFF_LEN];
+extern uint8_t rx_byte_count;
+extern uint8_t stop_char_flag;
+
+void uart_interupt_service(void);
+bool handle_stop_char(void);
+
+uint8_t tx_buff[UART_BUFF_LEN] = {"This is my message!\r\n"};
+uint8_t rx_buff[UART_BUFF_LEN];
+uint8_t rx_byte_count = 0;
+uint8_t stop_char_flag = 0;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-void FUNC_1 uart_interupt_service(void);
-bool FUNC_2 handle_stop_char(void);
+
+// External function call attribute definitions
+#define FUNC_1 __attribute__((__section__(".function_1")))
+#define FUNC_2 __attribute__((__section__(".function_2")))
+
+// Library attributes
+#define SECT_1 __attribute__((__section__(".section_1")))
+#define SECT_2 __attribute__((__section__(".section_2")))
+
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+/* USER CODE BEGIN PFP */
+
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
 
 void FUNC_1 uart_interupt_service(void)
 {
@@ -102,68 +144,13 @@ bool FUNC_2 handle_stop_char(void)
 	return false;
 }
 
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
-
-/* Section 1 Code (some) */
-//void FUNC_1 some_operation(uint32_t dlyTicks)
-//{
-//	uint32_t tick = HAL_GetTick();
-//	while(HAL_GetTick()-tick < dlyTicks);
-//	uint8_t tx_buff[1024];
-//	uint8_t val = 222;
-//	uint8_t len = snprintf((char*)&tx_buff,1024,"Some other words %d\r\n",val);
-//
-//	for(int i = 0;i<15;i++){
-//		HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
-//		HAL_Delay(150);
-//	}
-//}
-//
-///* Section 2 Code (another) */
-//void FUNC_2 another_operation(uint32_t dlyTicks)
-//{
-//	uint32_t tick = HAL_GetTick();
-//	while(HAL_GetTick()-tick < dlyTicks);
-//	uint8_t tx_buff[1024];
-//	uint8_t val = 22;
-//	uint8_t len = snprintf((char*)&tx_buff,1024,"Another word %d\r\n",val);
-//
-//	for(int i = 0;i<15;i++){
-//		HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
-//		HAL_Delay(100);
-//	}
-//}
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-uint8_t tx_buff[UART_BUFF_LEN] = {"This is my message!\r\n"};
-uint8_t rx_buff[UART_BUFF_LEN];
-uint8_t rx_byte_count = 0;
-uint8_t stop_char_flag = 0;
 /* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
   * @retval int
   */
-int main(void)
+int app_main(void)
 {
   /* USER CODE BEGIN 1 */
 
