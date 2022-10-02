@@ -50,7 +50,7 @@ MEMORY
   ISR_MEM (rx)    	: ORIGIN = 0x8000000,   LENGTH = 1K
   PTR_TABLE (rx)  	: ORIGIN = 0x8001000,	LENGTH = 1k
   CORE_MEM (rx)    	: ORIGIN = 0x8002000,   LENGTH = 100K
-  APP_SECTION_1 (rx)  	: ORIGIN = 0x801A000,	LENGTH = 128k
+  APP_SECTION_A (rx)  	: ORIGIN = 0x801A000,	LENGTH = 128k
 }
 
 /* Sections */
@@ -86,10 +86,9 @@ SECTIONS
   {
   	__ptr_table_start__ = .;
 	. = ALIGN(4);
-	lut_func_ptr_1 = .;
-	lut_func_ptr_2 = .;
-	lut_func_ptr_3 = .;
-	lut_func_ptr_4 = .;
+	lut_func_ptr_A1 = .;
+	lut_func_ptr_A2 = .;
+	lut_func_ptr_A3 = .;
 	. = ALIGN(4);
   	__ptr_table_end__ = .;
   } >PTR_TABLE
@@ -101,29 +100,36 @@ SECTIONS
   {
     . = ALIGN(4);
 	__app_section_1_start__ = .;
-	/* function 1 copy location */
-	lut_func_ptr_1 = .;
-	*(.function_1*)
-	*(.section_1*)
+	/* function A1 copy location */
+	lut_func_ptr_A1 = .;
+	*(.function_A1*)
+	
+    /* function A2 copy location */
+	lut_func_ptr_A2 = .;
+	*(.function_A2*)
+	
+	/* section A code */
+	*(.section_A*)
 	some_var = .;
+	
 	. = ALIGN(4);
-  } >APP_SECTION_1
+  } >APP_SECTION_A
   
   .code_section_2 :
   {
     . = ALIGN(4);
-    /* function 2 copy location */
-	lut_func_ptr_2 = .;
-	*(.function_2*)
-	*(.section_2*)
+    
+	/* section B code */
+	*(.section_B*)
 	another_var = .;
+	
 	. = ALIGN(4);
 	__app_section_1_end__ = .;
-  } >APP_SECTION_1
-
+  } >APP_SECTION_A
+	
   /* Check if APP_SECTION_1 usage exceeds APP_SECTION_1 size */
   ASSERT( LENGTH(APP_SECTION_1) >= (__app_section_1_end__ - __app_section_1_start__), "APP_SECTION_1 memory overflowed !")
-
+	
   /* Constant data into "CORE_MEM" Rom type memory */
   .rodata :
   {

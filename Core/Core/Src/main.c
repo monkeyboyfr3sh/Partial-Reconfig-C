@@ -25,56 +25,18 @@
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
 #include <stdbool.h>
-//#include "partial_region.h"
+
+#include <ld_script_vars.h>
+#include <terminal_app.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
-
-typedef enum {
-	stop_char = '\r',
-	backspace = 8
-}special_char_t;
-#define UART_BUFF_LEN	256
-#define HUART_HANDLE	(&huart2)
-
-// ############### Section 1 Code ###############
-extern char some_var[] = "some_var";
-extern char lut_func_ptr_1;
-extern void (*functoin_1)(uint32_t) = 0;
-
-// ############### Section 2 Code ###############
-extern char another_var[] = "another_var";
-extern char lut_func_ptr_2;
-extern void (*functoin_2)(uint32_t) = 0;
-
-extern uint8_t tx_buff[UART_BUFF_LEN];
-extern uint8_t rx_buff[UART_BUFF_LEN];
-extern uint8_t rx_byte_count;
-extern uint8_t stop_char_flag;
-
-void uart_interupt_service(void);
-bool handle_stop_char(void);
-
-uint8_t tx_buff[UART_BUFF_LEN] = {"This is my message!\r\n"};
-uint8_t rx_buff[UART_BUFF_LEN];
-uint8_t rx_byte_count = 0;
-uint8_t stop_char_flag = 0;
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-// External function call attribute definitions
-#define FUNC_1 __attribute__((__section__(".function_1")))
-#define FUNC_2 __attribute__((__section__(".function_2")))
-
-// Library attributes
-#define SECT_1 __attribute__((__section__(".section_1")))
-#define SECT_2 __attribute__((__section__(".section_2")))
-
 
 /* USER CODE END PD */
 
@@ -97,52 +59,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-void FUNC_1 uart_interupt_service(void)
-{
-	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-	HAL_UART_Transmit(HUART_HANDLE, &rx_buff[rx_byte_count], 1, 10);
-	rx_byte_count++;
-
-	switch(rx_buff[rx_byte_count-1]){
-		case stop_char:{
-			stop_char_flag = 1;
-			uint8_t len = snprintf((char*)tx_buff,UART_BUFF_LEN,"\r\n");
-			HAL_UART_Transmit(HUART_HANDLE, (uint8_t *)&tx_buff, len, 10);
-			break;
-		}
-		case backspace:{
-			uint8_t len = snprintf((char*)tx_buff,UART_BUFF_LEN," ");
-			tx_buff[len] = backspace;
-			HAL_UART_Transmit(HUART_HANDLE, (uint8_t *)&tx_buff, len+1, 10);
-			rx_byte_count-=2;
-			HAL_UART_Receive_IT(HUART_HANDLE, &rx_buff[rx_byte_count], 1);
-			break;
-		}
-		default:{
-			HAL_UART_Receive_IT(HUART_HANDLE, &rx_buff[rx_byte_count], 1);
-			break;
-		}
-	}
-}
-
-
-bool FUNC_2 handle_stop_char(void)
-{
-	if(stop_char_flag){
-	  uint8_t len = snprintf((char*)&tx_buff,UART_BUFF_LEN,">>>> ");
-	  memcpy(&tx_buff[len],rx_buff,rx_byte_count);
-	  len += snprintf((char*)&tx_buff[rx_byte_count+len],UART_BUFF_LEN,"\r\n\n$ ");
-	  HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, rx_byte_count+len, 10);
-
-	  stop_char_flag = 0;
-	  rx_byte_count = 0;
-	  HAL_UART_Receive_IT(&huart2, &rx_buff[rx_byte_count], 1);
-	  return true;
-	}
-	return false;
-}
 
 /* USER CODE END 0 */
 
@@ -177,48 +93,41 @@ int app_main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  uint8_t tx_buff[1024];
-  uint8_t len;
+	uint8_t tx_buff[1024];
+	uint8_t len;
 
-  // Entry
-  len = snprintf((char*)&tx_buff,1024,"\r\n < ==================== Fixed Core Entry point ==================== > \r\n");
-  HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
+	// Setup terminal
+	rx_byte_count = 0;
+	HAL_UART_Receive_IT(HUART_HANDLE, &rx_buff[rx_byte_count], 1);
 
-  // Setup terminal
-  rx_byte_count = 0;
-  HAL_UART_Receive_IT(HUART_HANDLE, &rx_buff[rx_byte_count], 1);
+	// Entry
+	len = snprintf((char*)&tx_buff,1024,"\r\n < ==================== Fixed Core Entry point ==================== > \r\n");
+	HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
 
-  len = snprintf((char*)&tx_buff,UART_BUFF_LEN,"\r\n\n$ ");
-  HAL_UART_Transmit(HUART_HANDLE, (uint8_t *)&tx_buff, rx_byte_count+len, 10);
+	print_shell_line();
 
-  // Partial reconfig code
-  void (*real_functoin_1)(uint32_t) = &uart_interupt_service;
-  void (*real_functoin_2)(uint32_t) = &handle_stop_char;
+	// Partial reconfig code
+	void (*real_functoin_1)(uint32_t) = &uart_interupt_service;
+	bool (*real_functoin_2)(void) = &handle_stop_char;
 
-  functoin_1 = &lut_func_ptr_1+1;
-  functoin_2 = &lut_func_ptr_2+1;
+	function_A1 = &lut_func_ptr_A1+1;
+	function_A2 = &lut_func_ptr_A2+1;
 
-  if(functoin_1!=real_functoin_1){
+	if(function_A1!=real_functoin_1){
 	  uint8_t len = snprintf((char*)&tx_buff,1024,"INCORRECT FUNC 1 PTR!!!\r\n");
 	  while(1){
 		  HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
 	  }
-  }
-  if(functoin_2!=real_functoin_2){
+	}
+	if(function_A2!=real_functoin_2){
 	  uint8_t len = snprintf((char*)&tx_buff,1024,"INCORRECT FUNC 2 PTR!!!\r\n");
 	  while(1){
 		  HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
 	  }
-  }
+	}
 
-  functoin_1(500);
-  functoin_2(500);
-
-//  some_operation(500);
-//  another_operation(200);
-
-  uint32_t tick = HAL_GetTick();
-  uint32_t data = 0;
+	uint32_t tick = HAL_GetTick();
+	uint32_t data = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -226,7 +135,7 @@ int app_main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  bool rval = handle_stop_char();
+	  bool rval = function_A2();
     /* USER CODE BEGIN 3 */
   }
 
