@@ -26,5 +26,7 @@ void print_shell_line(void);
 int command_lookup(uint8_t *buff,uint8_t byte_count);
 void do_math(void);
 void print_help(void);
+void clear_screen(void);
+void soft_reboot(void);
 
 #endif

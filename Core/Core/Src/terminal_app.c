@@ -20,8 +20,6 @@ uint8_t stop_char_flag = 0;
 void FUNC_1 uart_interupt_service(void)
 {
 	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-	HAL_UART_Transmit(HUART_HANDLE, &rx_buff[rx_byte_count], 1, 10);
 	rx_byte_count++;
 
 	switch(rx_buff[rx_byte_count-1]){
@@ -35,17 +33,24 @@ void FUNC_1 uart_interupt_service(void)
 			break;
 		}
 		case backspace:{
-			// Remove char
-			uint8_t len = snprintf((char*)tx_buff,UART_BUFF_LEN," ");
-			tx_buff[len] = backspace;
-			HAL_UART_Transmit(HUART_HANDLE, (uint8_t *)&tx_buff, len+1, 10);
-			rx_byte_count-= (rx_byte_count>1) ? 2 : (rx_byte_count>0) ? 1 : 0;
+			rx_byte_count -= 1;
+			if(rx_byte_count){
+				HAL_UART_Transmit(HUART_HANDLE, &rx_buff[rx_byte_count], 1, 10);
+
+				// Remove char
+				uint8_t len = snprintf((char*)tx_buff,UART_BUFF_LEN," ");
+				tx_buff[len] = backspace;
+				HAL_UART_Transmit(HUART_HANDLE, (uint8_t *)&tx_buff, len+1, 10);
+				rx_byte_count -= 1;
+			}
 
 			// Setup to rx interrupt
 			HAL_UART_Receive_IT(HUART_HANDLE, &rx_buff[rx_byte_count], 1);
 			break;
 		}
 		default:{
+			HAL_UART_Transmit(HUART_HANDLE, &rx_buff[rx_byte_count-1], 1, 10);
+
 			// Setup to rx interrupt
 			HAL_UART_Receive_IT(HUART_HANDLE, &rx_buff[rx_byte_count], 1);
 			break;
@@ -73,8 +78,6 @@ bool FUNC_2 handle_stop_char(void)
 			case do_math_lut:
 				do_math();
 				break;
-			default:
-
 			case help_lut:
 				print_help();
 				break;
@@ -87,6 +90,17 @@ bool FUNC_2 handle_stop_char(void)
 				// If hit here, then key command detected
 				break;
 			}
+		}
+
+		// Command not found
+		else {
+			memset((char*)&tx_buff,0,UART_BUFF_LEN);
+			len = snprintf((char*)&tx_buff,UART_BUFF_LEN,"command '");
+			memcpy(&tx_buff[len],rx_buff,rx_byte_count);
+			len+=rx_byte_count-1;
+			len += snprintf((char*)&tx_buff[len],UART_BUFF_LEN,"' not recognized...\r\n\n");
+			HAL_UART_Transmit(&huart2, (uint8_t *)&tx_buff, len, 10);
+			print_help();
 		}
 
 		print_shell_line();
